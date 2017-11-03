@@ -21,7 +21,6 @@ public class DemoCluster implements InitializingBean{
         this.system = ActorSystem.create("demo-akka-system");
         this.rootActor = this.system
                 .actorOf(Props.create(RootActor.class, "root configuration"), "root-actor");
-
     }
 
     public void sendPing(){
