@@ -1,6 +1,11 @@
 package com.akka.yifan.akkademo.actor;
 
-import akka.actor.*;
+import akka.actor.ActorRef;
+import akka.actor.OneForOneStrategy;
+import akka.actor.Props;
+import akka.actor.SupervisorStrategy;
+import akka.actor.Terminated;
+import akka.actor.UntypedActor;
 import akka.japi.Function;
 import com.akka.yifan.akkademo.msg.DeadMsg;
 import com.akka.yifan.akkademo.msg.PingMsg;
@@ -22,14 +27,15 @@ public class MiddleActor extends UntypedActor{
     private final ActorRef rootActor;
     private final List<ActorRef> leaves;
 
-    @Override
-    public SupervisorStrategy supervisorStrategy() {
-        return new OneForOneStrategy(1, Duration.create("3 sec"), new Function<Throwable, SupervisorStrategy.Directive>() {
-            @Override
-            public SupervisorStrategy.Directive apply(Throwable throwable) throws Exception {
-                return OneForOneStrategy.escalate();
-            }
-        });
+    @Override public SupervisorStrategy supervisorStrategy() {
+        return new OneForOneStrategy(1, Duration.create("3 sec"),
+            new Function<Throwable, SupervisorStrategy.Directive>() {
+                @Override public SupervisorStrategy.Directive apply(Throwable throwable) throws Exception {
+                    SupervisorStrategy.Directive choose = OneForOneStrategy.escalate();
+                    Log.error("middle strategy {} is triggered by {}", choose, throwable.getMessage());
+                    return choose;
+                }
+            });
     }
 
     public MiddleActor(String configuration, ActorRef rootActor) {
@@ -62,7 +68,7 @@ public class MiddleActor extends UntypedActor{
     @Override
     public void aroundPostStop() {
         super.aroundPostStop();
-        Log.warn("middle around post start, configuration {}", configuration);
+        Log.warn("middle around post stop, configuration {}", configuration);
     }
 
     @Override
@@ -127,7 +133,7 @@ public class MiddleActor extends UntypedActor{
         }
 
         if (o instanceof Terminated){
-            Log.error("middle got terminate msg = {}", o);
+            Log.error("middle got terminate msg = {} from {}", o, getSender());
             return;
         }
 

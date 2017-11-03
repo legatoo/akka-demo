@@ -47,7 +47,7 @@ public class LeafActor extends UntypedActor{
     @Override
     public void aroundPostStop() {
         super.aroundPostStop();
-        Log.warn("leaf {} around post start, configuration {}", index, configuration);
+        Log.warn("leaf {} around post stop, configuration {}", index, configuration);
     }
 
     @Override
@@ -96,7 +96,7 @@ public class LeafActor extends UntypedActor{
 
         if(o instanceof DeadMsg) {
             Log.info("leaf {} got dead msg, throw exception", index);
-            throw new RuntimeException("leaf throw");
+            throw new RuntimeException("leaf-dead-exception");
         }
 
         unhandled(o);

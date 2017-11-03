@@ -1,17 +1,20 @@
 package com.akka.yifan.akkademo.actor;
 
 import akka.actor.ActorRef;
+import akka.actor.OneForOneStrategy;
 import akka.actor.Props;
+import akka.actor.SupervisorStrategy;
 import akka.actor.Terminated;
 import akka.actor.UntypedActor;
+import akka.japi.Function;
 import com.akka.yifan.akkademo.msg.DeadMsg;
-import com.akka.yifan.akkademo.msg.MsgCode;
 import com.akka.yifan.akkademo.msg.PingMsg;
 import com.akka.yifan.akkademo.msg.PongMsg;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import scala.Option;
 import scala.PartialFunction;
+import scala.concurrent.duration.Duration;
 import scala.runtime.BoxedUnit;
 
 public class RootActor extends UntypedActor {
@@ -20,6 +23,16 @@ public class RootActor extends UntypedActor {
     private final String configuration;
     private ActorRef middleActorRef;
 
+    @Override public SupervisorStrategy supervisorStrategy() {
+        return new OneForOneStrategy(1, Duration.create("3 sec"),
+            new Function<Throwable, SupervisorStrategy.Directive>() {
+                @Override public SupervisorStrategy.Directive apply(Throwable throwable) throws Exception {
+                    SupervisorStrategy.Directive choose = OneForOneStrategy.restart();
+                    Log.error("root strategy {} is triggered by {}", choose, throwable.getMessage());
+                    return choose;
+                }
+            });
+    }
 
     public RootActor(String configuration) {
         Log.info("root in constructor, configuration {}", configuration);
@@ -45,7 +58,7 @@ public class RootActor extends UntypedActor {
     @Override
     public void aroundPostStop() {
         super.aroundPostStop();
-        Log.warn("root around post start, configuration {}", configuration);
+        Log.warn("root around post stop, configuration {}", configuration);
     }
 
     @Override
