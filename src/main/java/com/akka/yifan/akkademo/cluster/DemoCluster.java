@@ -4,6 +4,7 @@ import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.actor.Props;
 import com.akka.yifan.akkademo.actor.RootActor;
+import com.akka.yifan.akkademo.msg.ClusterDownMsg;
 import com.akka.yifan.akkademo.msg.DeadMsg;
 import com.akka.yifan.akkademo.msg.PingMsg;
 import org.springframework.beans.factory.InitializingBean;
@@ -20,6 +21,7 @@ public class DemoCluster implements InitializingBean{
         this.system = ActorSystem.create("demo-akka-system");
         this.rootActor = this.system
                 .actorOf(Props.create(RootActor.class, "root configuration"), "root-actor");
+
     }
 
     public void sendPing(){
@@ -29,4 +31,6 @@ public class DemoCluster implements InitializingBean{
     public void sendDead(){
         rootActor.tell(new DeadMsg(), ActorRef.noSender());
     }
+
+    public void clusterDown() {rootActor.tell(new ClusterDownMsg(), ActorRef.noSender());}
 }

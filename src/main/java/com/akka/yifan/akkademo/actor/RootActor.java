@@ -7,15 +7,19 @@ import akka.actor.SupervisorStrategy;
 import akka.actor.Terminated;
 import akka.actor.UntypedActor;
 import akka.japi.Function;
+import com.akka.yifan.akkademo.msg.ClusterDownMsg;
 import com.akka.yifan.akkademo.msg.DeadMsg;
 import com.akka.yifan.akkademo.msg.PingMsg;
 import com.akka.yifan.akkademo.msg.PongMsg;
+import com.akka.yifan.akkademo.msg.ReloadMsg;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import scala.Option;
 import scala.PartialFunction;
 import scala.concurrent.duration.Duration;
 import scala.runtime.BoxedUnit;
+
+import java.util.concurrent.TimeUnit;
 
 public class RootActor extends UntypedActor {
     private static final Logger Log = LoggerFactory.getLogger(RootActor.class);
@@ -95,6 +99,14 @@ public class RootActor extends UntypedActor {
     public void postRestart(Throwable reason) throws Exception {
         super.postRestart(reason);
         Log.warn("root post re-start, configuration {} reason {}", configuration, reason);
+        getContext().system().scheduler()
+            .scheduleOnce(
+                Duration.create(5, TimeUnit.SECONDS),
+                getSelf(),
+                new ReloadMsg(),
+                getContext().system().dispatcher(),
+                getSelf());
+        Log.warn("root post re-start, sent a scheduler message to reload at {}", System.currentTimeMillis());
     }
 
     @Override
@@ -112,6 +124,16 @@ public class RootActor extends UntypedActor {
 
         if(o instanceof DeadMsg){
             middleActorRef.tell(o, getSelf());
+            return;
+        }
+
+        if (o instanceof ClusterDownMsg) {
+            Log.error("root actor is going to down");
+            throw new RuntimeException("root-dead-exception");
+        }
+
+        if(o instanceof ReloadMsg){
+            Log.error("root recovery from dead, going to rebuild index at {}", System.currentTimeMillis());
             return;
         }
 
